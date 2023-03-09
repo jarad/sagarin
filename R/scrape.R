@@ -6,54 +6,63 @@
 #' @return a data.frame containing all the scraped data
 #'
 scrape <- function(url = "https://sagarin.usatoday.com/2023-2/college-basketball-team-ratings-2022-23/") {
-  doc <- read_html(url)
-}
+  doc <- readLines(url)
 
+  # Determine lines that correspond to the table
+  RATING_lines <- which(grepl("RATING", doc))+2
+  diff13 <- which(diff(RATING_lines)==13)
+  table_starts <- RATING_lines[diff13]
 
-library(rvest)
+  n <- length(table_starts)
 
-url <- "https://sagarin.usatoday.com/2023-2/college-basketball-team-ratings-2022-23/"
-
-doc <- rvest::read_html(url)
-
-doc %>% html_elements("pre")
-
-
-doc2 <- readLines(url)
-
-RATING_lines <- which(grepl("RATING", doc2))+2
-diff13 <- which(diff(RATING_lines)==13)
-table_starts <- RATING_lines[diff13]
-
-n <- length(table_starts)
-
-table_rows <- numeric(0)
-for (i in seq_along(table_starts)) {
-  if (i < length(table_starts)) {
-    table_rows <- c(table_rows, table_starts[i] + 0:9)
-  } else {
-    table_rows <- c(table_rows, table_starts[i] + 0:2)
+  table_rows <- numeric(0)
+  for (i in seq_along(table_starts)) {
+    if (i < length(table_starts)) {
+      table_rows <- c(table_rows, table_starts[i] + 0:9)
+    } else {
+      table_rows <- c(table_rows, table_starts[i] + 0:2)
+    }
   }
+  foo <- tempfile()
+  writeLines(doc[table_rows], con = foo)
+
+  d <- read.fwf(foo, sep = ";",
+                widths = c(-28,
+                            24,  # team
+                           -30,
+                            7,   # RATING
+                           -29, #
+                            5,   # wins
+                            4,   # losses
+                            8,   # SCHEDL
+                           -1,
+                            4,   # RANK
+                           -1,
+                            5,   # wins vs top 25
+                            4,   # losses vs top 25
+                           -3,
+                            5,   # wins vs top 50
+                            4,   # losses vs top 50
+                           -32,
+                            8,   # PREDICTOR
+                           -5,
+                           -31,
+                            8,   # GOLDEN_MEAN
+                           -5,
+                           -31,
+                            8,   # RECENT
+                           -5,
+                           -9,
+                            16   # conference
+                           ),
+                col.names = c("team","RATING","wins","losses","SCHEDL","RANK",
+                  "wins_vs_top_25","losses_vs_top_25",
+                  "wins_vs_top_50","losses_vs_top_50",
+                  "PREDICTOR","GOLDEN_MEAN","RECENT",
+                  "conference")
+                )
+
+  d$team <- trimws(d$team)
+
+  return(d)
 }
-
-read_row <- function(row) {
-  row <- gsub('</font>', '', row)
-  row <- gsub('<font color=\"#000000\">', '', row)
-  row <- gsub('=<font color=\"#9900ff\">', '', row)
-  row <- gsub('|<font color=\"#0000ff\">', '', row)
-  row <- gsub('|<font color=\"#000000\">', '', row)
-  row <- gsub('|<font color=\"#bb0000\">', '', row)
-  row <- gsub('|<font color=\"#006B3C\">', '', row)
-}
-
-writeLines(doc2[table_rows], con = "temp.txt")
-
-d <- read.fwf("temp.txt", sep = ";",
-              widths = c(-28, 24, -30, 7, -30, 4, 4, 8, 1, 4, 2,
-                         4, 4, 4, 4, 5,
-                         -31, 8, 5,
-                         -31, 8, 5,
-                         -31, 8, 5,
-                         -31, 8, 5,
-                         9, 16))
-
