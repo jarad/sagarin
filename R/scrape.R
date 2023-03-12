@@ -2,8 +2,9 @@
 #'
 #' Scrape Sagarin ratings from the USA Today website.
 #'
-#' @param url
+#' @param url a character indicating the url to scrape
 #' @return a data.frame containing all the scraped data
+#' @export
 #'
 scrape <- function(url = "https://sagarin.usatoday.com/2023-2/college-basketball-team-ratings-2022-23/") {
   doc <- readLines(url)
